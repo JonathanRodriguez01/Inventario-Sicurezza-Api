@@ -6,7 +6,7 @@ Maneja lectura, escritura y modificación de productos en archivo JSON.
 import os
 from fastapi import HTTPException
 from src.helpers.json_utils import leer_json, escribir_json
-from src.schemas.producto_schema import ProductoUpdate, ProductoResponse
+from src.schemas.producto_schema import ProductoResponse
 
 
 class ProductoService:
