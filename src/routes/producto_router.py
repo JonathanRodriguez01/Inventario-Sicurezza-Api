@@ -2,104 +2,72 @@
 Router para endpoints CRUD de productos.
 """
 
-from typing import List, Optional
-
-from fastapi import APIRouter, HTTPException, Query
-
-from src.controllers.producto_controller import ProductoController
-from src.repositories.producto_repository import ProductoRepository
+from typing import List
+from fastapi import APIRouter, Body
 from src.services.producto_service import ProductoService
+from src.controllers.producto_controller import ProductoController
 from src.schemas.producto_schema import (
     ProductoCreate,
     ProductoUpdate,
-    ProductoResponse,
+    ProductoResponse
 )
 
 router = APIRouter()
-
-# Inyección manual de dependencias
-repo = ProductoRepository()
-service = ProductoService(repo)
+service = ProductoService()
 controller = ProductoController(service)
 
 
 @router.get("/", response_model=List[ProductoResponse])
-async def listar_productos(
-    nombre: Optional[str] = Query(None, description="Filtro por nombre parcial")
-):
+async def listar_productos():
     """
-    Retorna la lista de productos, opcionalmente filtrados por nombre parcial.
-
-    Args:
-        nombre (Optional[str]): Cadena para filtrar productos.
-
-    Returns:
-        List[ProductoResponse]: Productos encontrados.
+    Lista todos los productos.
     """
-    return controller.listar_productos(nombre)
+    return await controller.listar_productos()
 
 
 @router.get("/{producto_id}", response_model=ProductoResponse)
 async def obtener_producto(producto_id: int):
     """
-    Retorna un producto dado su ID.
-
-    Args:
-        producto_id (int): ID del producto a obtener.
-
-    Raises:
-        HTTPException: Si no existe el producto (404).
-
-    Returns:
-        ProductoResponse: Producto encontrado.
+    Retorna un producto por ID.
     """
-    prod = controller.obtener_producto(producto_id)
-    if prod is None:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return prod
+    return await controller.obtener_producto(producto_id)
 
 
 @router.post("/", response_model=ProductoResponse)
 async def crear_producto(producto: ProductoCreate):
     """
-    Crea un nuevo producto con los datos proporcionados.
-
-    Args:
-        producto (ProductoCreate): Datos del producto a crear.
-
-    Returns:
-        ProductoResponse: Producto creado.
+    Crea un nuevo producto.
     """
-    return controller.crear_producto(producto)
+    return await controller.crear_producto(producto)
 
 
 @router.put("/{producto_id}", response_model=ProductoResponse)
-async def actualizar_producto(
-    producto_id: int,
-    producto: ProductoUpdate
-):
+async def actualizar_producto(producto_id: int, data: ProductoUpdate):
     """
-    Actualiza un producto existente con nuevos datos.
-
-    Args:
-        producto_id (int): ID del producto a actualizar.
-        producto (ProductoUpdate): Nuevos datos del producto.
-
-    Returns:
-        ProductoResponse: Producto actualizado.
+    Actualiza un producto existente.
     """
-    return controller.actualizar_producto(producto_id, producto)
+    return await controller.actualizar_producto(producto_id, data)
 
 
 @router.delete("/{producto_id}", response_model=bool)
 async def eliminar_producto(producto_id: int):
     """
-    Elimina un producto por su ID.
-
-    Args:
-        producto_id (int): ID del producto a eliminar.
-
-    Returns:
-        bool: True si se eliminó correctamente, False si no se encontró.
+    Elimina un producto por ID.
     """
-    return controller.eliminar_producto(producto_id)
+    return await controller.eliminar_producto(producto_id)
+
+
+@router.put("/{producto_id}/ajustar-stock", response_model=ProductoResponse)
+async def ajustar_stock(producto_id: int, cantidad: int = Body(...)):
+    """
+    Ajusta el stock del producto.
+    """
+    return await controller.ajustar_stock(producto_id, cantidad)
+
+
+@router.post("/{producto_id}/venta")
+async def registrar_venta(producto_id: int):
+    """
+    Registra una venta del producto con el ID proporcionado.
+    """
+    return await controller.registrar_venta(producto_id)

@@ -1,106 +1,57 @@
 """
-Módulo controlador para la gestión de productos.
-
-Define la clase ProductoController que maneja la lógica de negocio relacionada
-con los productos, sirviendo de intermediario entre las rutas y los servicios.
+Controlador para la lógica de negocio de productos.
 """
 
-from typing import List, Optional
-
 from src.services.producto_service import ProductoService
-from src.schemas.producto_schema import (
-    ProductoCreate,
-    ProductoUpdate,
-    ProductoResponse
-)
+from src.schemas.producto_schema import ProductoCreate, ProductoUpdate
 
 
 class ProductoController:
     """
-    Controlador que maneja la lógica de las operaciones sobre productos.
-    Recibe peticiones desde las rutas y llama al servicio correspondiente.
+    Controlador que maneja la lógica entre los endpoints y el servicio.
     """
 
     def __init__(self, service: ProductoService):
-        """
-        Inicializa el controlador con una instancia del servicio de productos.
-
-        Args:
-            service (ProductoService): Servicio que maneja la lógica de negocio.
-        """
         self.service = service
 
-    def listar_productos(self, nombre: Optional[str] = None) -> List[ProductoResponse]:
+    async def listar_productos(self):
         """
-        Lista productos, opcionalmente filtrando por nombre parcial.
-
-        Args:
-            nombre (Optional[str]): Nombre parcial para filtrar productos.
-
-        Returns:
-            List[ProductoResponse]: Lista de productos filtrados o todos si no hay filtro.
+        Lista todos los productos.
         """
-        productos = self.service.listar_productos(nombre)
-        return [ProductoResponse.from_orm(prod) for prod in productos]
+        return self.service.listar_productos()
 
-    def obtener_producto(self, producto_id: int) -> ProductoResponse:
+    async def obtener_producto(self, producto_id: int):
         """
-        Obtiene un producto por su ID.
-
-        Args:
-            producto_id (int): ID del producto a obtener.
-
-        Returns:
-            ProductoResponse: Producto encontrado.
-
-        Raises:
-            HTTPException: Si el producto no existe.
+        Retorna un producto por ID.
         """
-        producto = self.service.obtener_producto_por_id(producto_id)
-        return ProductoResponse.from_orm(producto)
+        return self.service.obtener_producto(producto_id)
 
-    def crear_producto(self, producto_data: ProductoCreate) -> ProductoResponse:
+    async def crear_producto(self, data: ProductoCreate):
         """
         Crea un nuevo producto.
-
-        Args:
-            producto_data (ProductoCreate): Datos del producto a crear.
-
-        Returns:
-            ProductoResponse: Producto creado.
         """
-        nuevo_producto = self.service.crear_producto(producto_data)
-        return ProductoResponse.from_orm(nuevo_producto)
+        return self.service.crear_producto(data.dict())
 
-    def actualizar_producto(
-        self,
-        producto_id: int,
-        producto_data: ProductoUpdate
-    ) -> ProductoResponse:
+    async def actualizar_producto(self, producto_id: int, data: ProductoUpdate):
         """
-        Actualiza un producto existente.
-
-        Args:
-            producto_id (int): ID del producto.
-            producto_data (ProductoUpdate): Nuevos datos.
-
-        Returns:
-            ProductoResponse: Producto actualizado.
+        Actualiza los datos de un producto.
         """
-        producto_actualizado = self.service.actualizar_producto(
-            producto_id,
-            producto_data
-        )
-        return ProductoResponse.from_orm(producto_actualizado)
+        return self.service.actualizar_producto(producto_id, data.dict(exclude_unset=True))
 
-    def eliminar_producto(self, producto_id: int) -> bool:
+    async def eliminar_producto(self, producto_id: int):
         """
-        Elimina un producto por su ID.
-
-        Args:
-            producto_id (int): ID del producto a eliminar.
-
-        Returns:
-            bool: True si se eliminó correctamente, False si no se encontró.
+        Elimina un producto por ID.
         """
         return self.service.eliminar_producto(producto_id)
+
+    async def ajustar_stock(self, producto_id: int, cantidad: int):
+        """
+        Ajusta el stock del producto.
+        """
+        return self.service.ajustar_stock(producto_id, cantidad)
+
+    async def registrar_venta(self, producto_id: int):
+        """
+        Registra una venta del producto.
+        """
+        return self.service.registrar_venta(producto_id)

@@ -1,59 +1,41 @@
 """
-Controlador para la gestión del inventario.
-
-Este módulo define la clase InventarioController, que actúa como intermediario entre
-las rutas de inventario y el servicio correspondiente.
+Controlador de inventario. Contiene lógica para operaciones relacionadas con el stock
+de productos como listar productos con bajo stock o productos agotados.
 """
 
 from typing import List
 from src.models.producto import Producto
-from src.services.inventario_service import InventarioService
+from src.services.producto_service import ProductoService
 
 
 class InventarioController:
     """
-    Controlador que maneja la lógica de las operaciones sobre el inventario.
+    Controlador para operaciones relacionadas con el inventario de productos.
     """
 
-    def __init__(self, service: InventarioService):
+    def __init__(self) -> None:
         """
-        Inicializa el controlador con una instancia del servicio de inventario.
+        Inicializa el controlador con el servicio de productos.
+        """
+        self.service = ProductoService()
+
+    def listar_productos_stock_bajo(self, umbral: int) -> List[Producto]:
+        """
+        Retorna los productos cuyo stock es menor o igual al umbral proporcionado.
 
         Args:
-            service (InventarioService): Servicio que maneja la lógica de negocio del inventario.
-        """
-        self.service = service
-
-    def calcular_precio_venta(self, costo: float, margen: float = 0.30) -> float:
-        """
-        Calcula el precio de venta de un producto.
-
-        Args:
-            costo (float): Costo base del producto.
-            margen (float): Margen de ganancia deseado (por defecto 30%).
+            umbral (int): Límite máximo de stock permitido.
 
         Returns:
-            float: Precio de venta sugerido.
+            List[Producto]: Lista de productos con stock bajo.
         """
-        return self.service.calcular_precio_venta(costo, margen)
+        return [p for p in self.service.productos if p.stock <= umbral]
 
-    def obtener_stock_total(self) -> int:
+    def listar_productos_agotados(self) -> List[Producto]:
         """
-        Obtiene la cantidad total de unidades en stock.
-
-        Returns:
-            int: Total de unidades disponibles.
-        """
-        return self.service.obtener_stock_total()
-
-    def obtener_productos_bajo_stock(self, umbral: int = 5) -> List[Producto]:
-        """
-        Obtiene una lista de productos cuyo stock es menor al umbral.
-
-        Args:
-            umbral (int): Umbral de stock bajo. Por defecto es 5.
+        Retorna los productos cuyo stock es exactamente 0.
 
         Returns:
-            List[Producto]: Productos con stock bajo.
+            List[Producto]: Lista de productos agotados.
         """
-        return self.service.listar_productos_bajo_stock(umbral)
+        return [p for p in self.service.productos if p.stock == 0]

@@ -1,24 +1,21 @@
 """
-Modelo Pydantic para representar un producto en el inventario.
+Modelo de dominio para representar un producto.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class Producto(BaseModel):
     """
-    Define la estructura y validaciones para un producto.
-
+    Modelo que representa un producto con sus atributos principales.
+    
     Atributos:
         id (int): Identificador único del producto.
-        nombre (str): Nombre descriptivo del producto.
-        precio_costo (float): Costo unitario de adquisición.
-        precio_venta (float): Precio unitario de venta.
+        nombre (str): Nombre del producto.
+        precio (float): Precio unitario del producto.
         stock (int): Cantidad disponible en inventario.
     """
-
-    id: int = Field(..., example=1)
-    nombre: str = Field(..., example="Camiseta")
-    precio_costo: float = Field(..., gt=0, example=10.5)
-    precio_venta: float = Field(..., gt=0, example=20.0)
-    stock: int = Field(..., ge=0, example=100)
+    id: int
+    nombre: str
+    precio: float
+    stock: int

@@ -1,46 +1,53 @@
 """
-Schemas Pydantic para la entidad Producto.
+Schemas Pydantic para la entidad Producto. Se utilizan para validación y serialización
+de datos en las operaciones de entrada y salida de la API.
 """
 
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ProductoBase(BaseModel):
     """
-    Schema base para un producto.
+    Campos comunes para un producto.
+
+    Atributos:
+        nombre (str): Nombre del producto.
+        descripcion (str): Descripción del producto.
+        precio (float): Precio unitario.
+        cantidad (int): Stock disponible.
     """
     nombre: str
-    descripcion: Optional[str] = None
+    descripcion: str
     precio: float
+    cantidad: int
 
 
 class ProductoCreate(ProductoBase):
     """
-    Schema para crear un producto.
+    Esquema para crear un producto.
+    Hereda todos los campos del esquema base.
     """
-    # Hereda todos los campos de ProductoBase; no se añaden nuevos campos.
 
 
 class ProductoUpdate(BaseModel):
     """
-    Schema para actualizar un producto.
-    Todos los campos son opcionales.
+    Esquema para actualizar un producto.
+
+    Atributos opcionales para permitir actualizaciones parciales.
     """
     nombre: Optional[str] = None
     descripcion: Optional[str] = None
     precio: Optional[float] = None
+    cantidad: Optional[int] = None
 
 
 class ProductoResponse(ProductoBase):
     """
-    Schema para la respuesta de un producto.
-    Incluye el ID del producto.
+    Esquema de respuesta para un producto.
+
+    Atributos:
+        id (int): Identificador único.
     """
     id: int
-
-    class Config:
-        """
-        Configuración para permitir compatibilidad con ORMs.
-        """
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

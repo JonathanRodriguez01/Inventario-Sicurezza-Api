@@ -1,10 +1,26 @@
 [
     {
         "id": 1,
-        "nombre": "Guantes Sicurezza Mejorados",
-        "descripcion": "Guantes con refuerzo extra",
-        "precio_costo": 42000.0,
-        "precio_venta": 83000.0,
-        "stock": 8
+        "nombre": "Teclado mecánico",
+        "descripcion": "Teclado con retroiluminación RGB",
+        "precio": 45000.0,
+        "cantidad": 15,
+        "ventas": 4
+    },
+    {
+        "id": 2,
+        "nombre": "Mouse gamer",
+        "descripcion": "Mouse con 6 botones programables",
+        "precio": 25000.0,
+        "cantidad": 30,
+        "ventas": 6
+    },
+    {
+        "id": 3,
+        "nombre": "Monitor 24 pulgadas",
+        "descripcion": "Pantalla LED Full HD",
+        "precio": 120000.0,
+        "cantidad": 10,
+        "ventas": 1
     }
 ]

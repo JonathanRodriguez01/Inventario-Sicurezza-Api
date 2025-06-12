@@ -1,65 +1,63 @@
 """
-Módulo de rutas para manejar las solicitudes HTTP relacionadas con el inventario.
-
-Define endpoints para operaciones como el cálculo de precio de venta, total de stock disponible
-y productos con bajo nivel de stock.
+Router de inventario. Expone endpoints relacionados con el stock de productos,
+como listar productos con stock bajo o agotados.
 """
 
-# Importaciones estándar
 from typing import List
+from fastapi import APIRouter, Query, HTTPException
 
-# Importaciones de terceros
-from fastapi import APIRouter, Query
 
-# Importaciones locales
 from src.controllers.inventario_controller import InventarioController
-from src.models.producto import Producto
-from src.services.inventario_service import InventarioService
+from src.schemas.producto_schema import ProductoResponse
 
 router = APIRouter()
-controller = InventarioController(service=InventarioService())
+controller = InventarioController()
 
 
-@router.get("/inventario/precio-venta", response_model=float)
-async def calcular_precio_venta(
-    costo: float = Query(..., description="Costo base del producto"),
-    margen: float = Query(0.30, description="Margen de ganancia (por defecto 0.30)"),
-) -> float:
+@router.get(
+    "/bajo-stock",
+    response_model=List[ProductoResponse],
+    summary="Listar productos con stock bajo"
+)
+async def listar_productos_stock_bajo(
+    umbral: int = Query(5, ge=1, description="Stock máximo permitido")
+) -> List[ProductoResponse]:
     """
-    Calcula el precio de venta sugerido a partir del costo y margen de ganancia.
+    Retorna los productos cuyo stock es menor o igual al umbral indicado.
 
     Args:
-        costo (float): Costo del producto.
-        margen (float): Margen de ganancia deseado (opcional).
+        umbral (int): Umbral máximo de stock para considerar el producto como bajo.
 
     Returns:
-        float: Precio de venta sugerido.
+        List[ProductoResponse]: Lista de productos con bajo stock.
     """
-    return controller.calcular_precio_venta(costo, margen)
+    try:
+        productos = controller.listar_productos_stock_bajo(umbral)
+        return [ProductoResponse.from_orm(p) for p in productos]
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Error interno al listar productos con stock bajo"
+        ) from exc
 
 
-@router.get("/inventario/stock-total", response_model=int)
-async def obtener_stock_total() -> int:
+@router.get(
+    "/agotados",
+    response_model=List[ProductoResponse],
+    summary="Listar productos agotados"
+)
+async def listar_productos_agotados() -> List[ProductoResponse]:
     """
-    Devuelve la cantidad total de productos disponibles en stock.
+    Retorna los productos cuyo stock es igual a cero (agotados).
 
     Returns:
-        int: Total de unidades en stock.
+        List[ProductoResponse]: Lista de productos agotados.
     """
-    return controller.obtener_stock_total()
-
-
-@router.get("/inventario/bajo-stock", response_model=List[Producto])
-async def productos_bajo_stock(
-    umbral: int = Query(5, description="Stock mínimo para considerar bajo")
-) -> List[Producto]:
-    """
-    Devuelve una lista de productos cuyo stock está por debajo del umbral.
-
-    Args:
-        umbral (int): Valor límite inferior de stock. Por defecto es 5.
-
-    Returns:
-        List[Producto]: Productos con stock bajo.
-    """
-    return controller.obtener_productos_bajo_stock(umbral)
+    try:
+        productos = controller.listar_productos_agotados()
+        return [ProductoResponse.from_orm(p) for p in productos]
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Error interno al listar productos agotados"
+        ) from exc

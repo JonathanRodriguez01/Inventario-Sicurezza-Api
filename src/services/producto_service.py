@@ -1,109 +1,112 @@
 """
-Módulo de servicio para la gestión de productos.
-
-Define la lógica de negocio relacionada con los productos, sirviendo de intermediario
-entre el controlador y el repositorio.
+Servicio para la lógica de negocio relacionada con productos.
+Maneja lectura, escritura y modificación de productos en archivo JSON.
 """
 
-from typing import List, Optional
-from src.models.producto import Producto
+import os
+from fastapi import HTTPException
+from src.helpers.json_utils import leer_json, escribir_json
+from src.schemas.producto_schema import ProductoUpdate, ProductoResponse
 
 
 class ProductoService:
     """
-    Servicio que maneja la lógica de negocio para productos.
+    Servicio de productos. Implementa la lógica CRUD y ajustes de stock.
     """
 
-    def __init__(self, productos: Optional[List[Producto]] = None):
+    def __init__(self):
+        self.ruta_productos = os.path.join("src", "data", "productos.json")
+
+    def listar_productos(self) -> list[ProductoResponse]:
         """
-        Inicializa el servicio con una lista de productos.
+        Retorna la lista completa de productos.
+        """
+        productos = leer_json(self.ruta_productos)
+        return [ProductoResponse(**p) for p in productos]
+
+    def registrar_venta(self, producto_id: int) -> dict:
+        """
+        Registra una venta sumando +1 al campo ventas.
 
         Args:
-            productos (Optional[List[Producto]]): Lista inicial de productos.
-                Si no se provee, se inicializa como lista vacía.
-        """
-        if productos is None:
-            productos = []
-        self.productos = productos
-
-    def listar_productos(self, nombre: Optional[str] = None) -> List[Producto]:
-        """
-        Lista productos, opcionalmente filtrando por nombre parcial.
-
-        Args:
-            nombre (Optional[str]): Nombre parcial para filtrar productos.
+            producto_id (int): ID del producto a vender.
 
         Returns:
-            List[Producto]: Lista de productos filtrados o todos si no hay filtro.
+            dict: Mensaje de éxito con ventas totales.
         """
-        if nombre is None:
-            return self.productos
-        return [
-            producto for producto in self.productos
-            if nombre.lower() in producto.nombre.lower()
-        ]
+        productos = leer_json(self.ruta_productos)
+        for producto in productos:
+            if producto["id"] == producto_id:
+                producto["ventas"] = producto.get("ventas", 0) + 1
+                escribir_json(self.ruta_productos, productos)
+                return {
+                    "mensaje": "Venta registrada",
+                    "producto_id": producto_id,
+                    "ventas_totales": producto["ventas"]
+                }
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    def obtener_producto_por_id(self, producto_id: int) -> Optional[Producto]:
+    def obtener_producto(self, producto_id: int) -> ProductoResponse:
         """
-        Obtiene un producto por su ID.
-
-        Args:
-            producto_id (int): ID del producto a obtener.
-
-        Returns:
-            Optional[Producto]: Producto encontrado o None si no existe.
+        Retorna un producto dado su ID.
         """
-        for producto in self.productos:
-            if producto.id == producto_id:
-                return producto
-        return None
+        productos = leer_json(self.ruta_productos)
+        for producto in productos:
+            if producto["id"] == producto_id:
+                return ProductoResponse(**producto)
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    def crear_producto(self, nuevo_producto: Producto) -> Producto:
+    def crear_producto(self, data: dict) -> ProductoResponse:
         """
-        Crea un nuevo producto y lo añade a la lista.
-
-        Args:
-            nuevo_producto (Producto): Producto a crear.
-
-        Returns:
-            Producto: Producto creado.
+        Crea un nuevo producto con un ID único.
         """
-        self.productos.append(nuevo_producto)
-        return nuevo_producto
+        productos = leer_json(self.ruta_productos)
+        ids = [p["id"] for p in productos]
+        nuevo_id = max(ids, default=0) + 1
+        data["id"] = nuevo_id
+        data["ventas"] = 0
+        productos.append(data)
+        escribir_json(self.ruta_productos, productos)
+        return ProductoResponse(**data)
 
-    def actualizar_producto(self, producto_id: int,
-                            datos_actualizados: dict) -> Optional[Producto]:
+    def actualizar_producto(self, producto_id: int, data: dict) -> ProductoResponse:
         """
-        Actualiza un producto existente con los datos proporcionados.
-
-        Args:
-            producto_id (int): ID del producto a actualizar.
-            datos_actualizados (dict): Datos para actualizar el producto.
-
-        Returns:
-            Optional[Producto]: Producto actualizado o None si no existe.
+        Actualiza los datos de un producto existente.
         """
-        producto = self.obtener_producto_por_id(producto_id)
-        if not producto:
-            return None
-
-        for campo, valor in datos_actualizados.items():
-            if hasattr(producto, campo):
-                setattr(producto, campo, valor)
-        return producto
+        productos = leer_json(self.ruta_productos)
+        for producto in productos:
+            if producto["id"] == producto_id:
+                producto.update(data)
+                escribir_json(self.ruta_productos, productos)
+                return ProductoResponse(**producto)
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
 
     def eliminar_producto(self, producto_id: int) -> bool:
         """
         Elimina un producto por su ID.
-
-        Args:
-            producto_id (int): ID del producto a eliminar.
-
-        Returns:
-            bool: True si se eliminó el producto, False si no se encontró.
         """
-        for i, producto in enumerate(self.productos):
-            if producto.id == producto_id:
-                del self.productos[i]
+        productos = leer_json(self.ruta_productos)
+        for i, producto in enumerate(productos):
+            if producto["id"] == producto_id:
+                productos.pop(i)
+                escribir_json(self.ruta_productos, productos)
                 return True
         return False
+
+    def ajustar_stock(self, producto_id: int, cantidad: int) -> ProductoResponse:
+        """
+        Suma o resta cantidad al stock del producto.
+        """
+        productos = leer_json(self.ruta_productos)
+        for producto in productos:
+            if producto["id"] == producto_id:
+                nuevo_stock = producto["cantidad"] + cantidad
+                if nuevo_stock < 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Stock insuficiente para descontar"
+                    )
+                producto["cantidad"] = nuevo_stock
+                escribir_json(self.ruta_productos, productos)
+                return ProductoResponse(**producto)
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
